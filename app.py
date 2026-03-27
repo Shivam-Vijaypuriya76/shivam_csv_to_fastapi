@@ -1,7 +1,28 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import pandas as pd
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from database import engine, Base, get_db
 
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
+@app.get('/db-connect')
+def connect_db():
+    try:
+        with engine.connect() as con:
+            result = con.execute(text("SELECT 1"))
+            return {
+                "message": "Database connection successful",
+                "result": result.fetchone()[0]
+            }
+    except Exception as e:
+        return {
+            "message": "Database connection failed",
+            "error": str(e)
+        }
+
 
 @app.get("/")
 def home():
@@ -28,3 +49,36 @@ def get_csv_data():
         return {
             "error": str(e)
         }
+    
+
+
+# ✅ Get data by student_id (STRING type)
+@app.get("/get-student/{student_id}")
+def get_student_by_studentid(student_id: str):
+
+    try:
+        df = pd.read_csv("students_complete.csv")
+
+        student = df[df["student_id"] == student_id]
+
+        if student.empty:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        return student.fillna("").to_dict(orient="records")[0]
+
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500,
+            detail="CSV file not found"
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+    
+    
