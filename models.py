@@ -1,16 +1,19 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Float
 from database import Base
 
 class UserModel(Base):
     __tablename__ = "students"
 
-    student_id = Column(Integer, primary_key = True, index= True)
-    first_name = Column(String(50),nullable=False)
-    last_name = Column(String(50), nullable=False)
-    age = Column(Integer, nullable=False)
-    major = Column(String(50), nullable=False)
-    gpa = Column(Integer, nullable=False)
-    attendance = Column(Integer, nullable=False)
-    scholarship = Column(Integer,nullable=False)
-    city = Column(String(50),nullable=False)
-    status = Column(String(50), nullable=False)
+    student_id = Column(String(20), primary_key=True, index=True)  # ✅ FIX
+
+    first_name = Column(String(50))
+    last_name = Column(String(50))
+    age = Column(Integer)
+    major = Column(String(50))
+
+    gpa = Column(Float)   # ✅ FIX (float hona chahiye)
+    attendance = Column(Integer)
+    scholarship = Column(Integer)
+
+    city = Column(String(50))
+    status = Column(String(50))

@@ -1,13 +1,17 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,Depends
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
 
+import models  
+
 app = FastAPI()
 
+
 Base.metadata.create_all(bind=engine)
+
 @app.get('/db-connect')
 def connect_db():
     try:
@@ -82,3 +86,42 @@ def get_student_by_studentid(student_id: str):
         )
     
     
+@app.post("/upload-csv-to-db")
+def upload_csv_to_db(db: Session = Depends(get_db)):
+    try:
+        df = pd.read_csv("students_complete.csv")
+
+        for _, row in df.iterrows():
+
+            existing = db.query(models.UserModel).filter(
+                models.UserModel.student_id == row["student_id"]
+            ).first()
+
+            if existing:
+                continue
+
+            student = models.UserModel(
+                student_id=row["student_id"],  # ✅ STRING
+
+                first_name=row["first_name"],
+                last_name=row["last_name"],
+
+                age=None if pd.isna(row["age"]) else int(row["age"]),
+                major=row["major"],
+                gpa=None if pd.isna(row["gpa"]) else float(row["gpa"]),
+                attendance=None if pd.isna(row["attendance"]) else int(row["attendance"]),
+                scholarship=None if pd.isna(row["scholarship"]) else int(row["scholarship"]),
+
+                city=row["city"],
+                status=row["status"]
+            )
+
+            db.add(student)
+
+        db.commit()
+
+        return {"message": "CSV data successfully inserted into MySQL"}
+
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
